@@ -1,3 +1,4 @@
+# General packages
 numpy
 matplotlib
 pandas
@@ -5,3 +6,8 @@ opencv-python
 opencv-contrib-python
 tensorflow
 tqdm
+
+# For download_images.py
+requests
+awscli
+wget
