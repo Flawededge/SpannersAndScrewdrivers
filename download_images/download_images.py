@@ -1,140 +1,91 @@
-import csv
-import multiprocessing
-import subprocess
-from pathlib import Path
-import argparse
-import csv
-import subprocess
-import os
+import cv2 as cv
 from tqdm import tqdm
-import multiprocessing
-from multiprocessing import Pool as thread_pool
 import wget
-
-screwdriver_id = "n04154565"  # Any screwdrivers
-wrench_id = "n02680754"  # Crescent wrenches
-
-# Required files. [[Filename to check], [Url if missing]]
-index_files = [
-    [Path("class-descriptions-boxable.csv"),
-     "https://storage.googleapis.com/openimages/2018_04/class-descriptions-boxable.csv"],
-    [Path("train-annotations-bbox.csv"),
-     "https://storage.googleapis.com/openimages/2018_04/train/train-annotations-bbox.csv"],
-    [Path("validation-annotations-bbox.csv"),
-     "https://storage.googleapis.com/openimages/2018_04/validation/validation-annotations-bbox.csv"],
-    [Path("test-annotations-bbox.csv"),
-     "https://storage.googleapis.com/openimages/2018_04/test/test-annotations-bbox.csv"]
-]
+from pathlib import Path
+from urllib.error import HTTPError
+import threading
+from concurrent.futures import ThreadPoolExecutor as PoolExecutor
+import multiprocessing
+from urllib.request import urlretrieve
 
 
-# Loading bar for wGet
-def bar_custom(current, total, width=80):
-    print(
-        "\rDownloading: %d%% [%d / %d] Mb     " % (current / total * 100, int(current / 1000000), int(total / 1000000)),
-        end='')
+def get_image(joined_input):  # line, url, output_folder):
+    line, url, output_folder = joined_input.split(' ')
+
+    accepted_filenames = ['jpg', 'png', 'gif']
+
+    if url[-3:].lower() not in accepted_filenames:
+        return [f"{line}|Error: Invalid url (end of line)", False]
+
+    # Remove invalid characters to make the filename valid
+    filename = str(output_folder) + "\\" + url.split('/')[-1].strip() \
+        .replace('=', '').replace('?', '').replace('&', '').replace('*', '')
+    filename = Path(filename[0:-4].replace('.', '') + filename[-4:])
+
+    # Check if the file already exists
+    try:
+        if filename.exists():
+            return [f"{line}|Already exists", filename]
+    except Exception as e:
+        return [f"{line}|File error {e}", False]
+    else:
+        try:  # Attempt to download the file
+            urlretrieve(url, str(filename))
+            # wget.download(url, str(filename))
+        except HTTPError as e:  # If bad link, skip it
+            return [f"{line}|HTTP error: {e}", False]
+        except Exception as e:
+            return [f"{line}|Unhandled error: {e}", False]
+
+        return [f"{line}|Downloaded!", filename]  # The image has successfully been downloaded
 
 
-# The actual download images function
-def download_images(mode, classes, nthreads=multiprocessing.cpu_count()*2, occluded=1, truncated=1, groupOf=1,
-                    depiction=1, inside=1):
-    """ The actual download images function
-    :param mode: Dataset category - train, validation or test
-    :param classes: Names of object classes to be downloaded
-    :param nthreads: Number of threads to use
-    :type nthreads: int
-    :param occluded: Include occluded images
-    :type occluded: int
-    :param truncated: Include truncated images
-    :type truncated: int
-    :param groupOf: Include groupOf images
-    :type groupOf: int
-    :param depiction: Include depiction images
-    :type depiction: int
-    :param inside: Include inside images
-    :type inside: int
-    :return:
+def download_images(url_list_file, output_folder, max_threads=4):
+    """ Downloads images from a list of urls in a txt file
+
+    :param max_threads: The threads to use for downloads
+    :type max_threads: int
+    :param url_list_file: The location of the file containing a url per line
+    :type url_list_file: pathlib.Path or string
+    :param output_folder: A folder name to put all of the images
+    :type output_folder: : pathlib.Path or string
     """
-    # # Initial parameter setup ----------------------------------------------------------------------------------------
-    # Check if the index files are present
-    for i in index_files:
-        if i[0].exists():
-            print(f"{i[0]} found!")
-        else:
-            print(f"{i[0]} not found, downloading")
-            wget.download(i[1], bar=bar_custom)
-            print()
+    # Ensure that filename and output_folder are in pathlib.Path format
+    url_list_file = Path(url_list_file)
+    output_folder = Path(output_folder)
 
-    # Thread setup
-    threads = nthreads
-    if nthreads > multiprocessing.cpu_count()*2:
-        print(f"Error, {nthreads} is more threads than you have =(. ({multiprocessing.cpu_count()*2} is max)")
-        nthreads = multiprocessing.cpu_count()*2
+    # Check if output_folder exists, and make it if it doesn't
+    if not output_folder.exists():
+        output_folder.mkdir()
 
-    # Read the class descriptions
-    with open('./class-descriptions-boxable.csv', mode='r') as infile:
-        reader = csv.reader(infile)
-        dict_list = {rows[1]: rows[0] for rows in reader}
+    with url_list_file.open(encoding='utf8') as file:
+        url_list = [f"{cnt} {i.strip()} {str(output_folder)}" for cnt, i in enumerate(file.readlines())]
+        print(f"{len(url_list)} lines found!")
 
-    # subprocess.run(['rm', '-rf', mode])
-    # subprocess.run(['mkdir', mode])
-    if not os.path.isdir(mode):
-        os.mkdir(mode)
-
-    pool = thread_pool(threads)
-    commands = []
-    cnt = 0
-
-    print("Start loop")
-    for ind in range(0, len(classes)):
-        class_name = classes[ind]
-        print("Class "+str(ind) + " : " + class_name)
-
-        if not os.path.isdir(mode+'/'+class_name):
-            os.mkdir(mode+'/'+class_name)
-
-        current_class = dict_list[class_name.replace('_', ' ')]  # Contains the code for the list
-        command = "grep "+dict_list[class_name.replace('_', ' ')], " /" + mode + "-annotations-bbox.csv"
-        class_annotations = subprocess.run(command.split(), stdout=subprocess.PIPE).stdout.decode('utf-8')
-        class_annotations = class_annotations.splitlines()
-
-        for line in class_annotations:
-
-            line_parts = line.split(',')
-
-            #IsOccluded,IsTruncated,IsGroupOf,IsDepiction,IsInside
-            if occluded==0 and int(line_parts[8])>0:
-                print("Skipped %s",line_parts[0])
-                continue
-            if truncated==0 and int(line_parts[9])>0:
-                print("Skipped %s",line_parts[0])
-                continue
-            if groupOf==0 and int(line_parts[10])>0:
-                print("Skipped %s",line_parts[0])
-                continue
-            if depiction==0 and int(line_parts[11])>0:
-                print("Skipped %s",line_parts[0])
-                continue
-            if inside==0 and int(line_parts[12])>0:
-                print("Skipped %s",line_parts[0])
-                continue
-
-            cnt = cnt + 1
-
-            command = 'aws s3 --no-sign-request --only-show-errors cp s3://open-images-dataset/'+run_mode+'/'+line_parts[0]+'.jpg '+ run_mode+'/'+class_name+'/'+line_parts[0]+'.jpg'
-            commands.append(command)
-
-            with open('%s/%s/%s.txt'%(mode,class_name,line_parts[0]),'a') as f:
-                f.write(','.join([class_name, line_parts[4], line_parts[5], line_parts[6], line_parts[7]])+'\n')
-
-        print("Annotation Count : "+str(cnt))
-        commands = list(set(commands))
-        print("Number of images to be downloaded : "+str(len(commands)))
-
-        list(tqdm(pool.imap(os.system, commands), total = len(commands) ))
-
-        pool.close()
-        pool.join()
+        # Start a thread pool to run through the downloads in parallel (with as many threads as allowed)
+        with PoolExecutor(max_workers=max_threads) as executor:
+            cv.namedWindow("Display", cv.WINDOW_GUI_EXPANDED)
+            for i, result in executor.map(get_image, url_list):
+                if result is not False:  # If the download was a success
+                    # Imshow the file and decide if it's acceptable for the dataset
+                    print(i, end=' | ')
+                    result = Path(result)
+                    image = cv.imread(str(result))
+                    if image is None:
+                        result.unlink()  # Delete the file
+                        print("Unreadable image ='(")
+                        continue
+                    cv.waitKey(1)  # Get rid of any pending key presses
+                    cv.imshow("Display", image)
+                    if cv.waitKey(0) == 27:  # If esc is pressed
+                        result.unlink()  # Delete the file
+                        print("Delete =(")
+                    else:
+                        print("Keep!")
+                else:
+                    print(i)  # Image failed, so just print out result
+                cv.waitKey(1)
 
 
 if __name__ == '__main__':
-    download_images('train', ['Ice_cream', 'cookie'])
+    download_images("screwdriver.txt", "screwdrivers", max_threads=8)
