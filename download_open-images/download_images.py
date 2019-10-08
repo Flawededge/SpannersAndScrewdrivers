@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor as PoolExecutor
 import os
 from tqdm import tqdm
 import mmap  # For finding amount of lines in file
-import awscli
 
 
 def progress_bar(count, block_size, total_size, bar_length=30):
@@ -35,7 +34,7 @@ def download_file(url, sub_folder):
         print(f"Already exists: {str(file)}")
 
 
-def google_open_images_download(folder, mode, annotations_bbox, occluded, truncated, groupOf, depiction, inside):    # Spread out the variable so it's easier to follow the flow of the function
+def open_images_download(folder, mode, annotations_bbox, occluded, truncated, groupOf, depiction, inside):    # Spread out the variable so it's easier to follow the flow of the function
     ImageID,Source,LabelName,Confidence,XMin,XMax,YMin,YMax,IsOccluded,IsTruncated,IsGroupOf,IsDepiction,IsInside = annotations_bbox
 
     # Check if the image is actually wanted
@@ -103,7 +102,7 @@ def download_classes(class_names, mode, occluded=False, truncated=False, groupOf
             reader = csv.reader(file)
             for i in tqdm(reader, total=image_lines):
                 if i[2] in dict_list:
-                    processing_list.append(executor.submit(google_open_images_download, f"{str(mode_dir)}/{dict_list[i[2]]}", mode, i, occluded, truncated, groupOf, depiction, inside))
+                    processing_list.append(executor.submit(open_images_download, f"{str(mode_dir)}/{dict_list[i[2]]}", mode, i, occluded, truncated, groupOf, depiction, inside))
 
 
         print("Output list:")
