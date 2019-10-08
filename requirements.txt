@@ -5,9 +5,8 @@ pandas
 opencv-python
 opencv-contrib-python
 tensorflow
+keras
 tqdm
 
 # For download_images.py
-requests
-awscli
-wget
+progressbar

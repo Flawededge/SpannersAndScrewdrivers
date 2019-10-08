@@ -1,2 +1,12 @@
 /venv/
-/download_images/screwdrivers/
+/imagenet_download/screwdrivers/
+/imagenet_download/spanner/
+/Screwdriver/
+/Wrench/
+/download_open-images/train/
+/download_open-images/test/
+/download_open-images/validation/
+/download_open-images/class-descriptions-boxable.csv
+/download_open-images/test-annotations-bbox.csv
+/download_open-images/train-annotations-bbox.csv
+/download_open-images/validation-annotations-bbox.csv

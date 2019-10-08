@@ -1,13 +1,8 @@
-import cv2 as cv
-from tqdm import tqdm
-import wget
+from concurrent.futures import ThreadPoolExecutor as PoolExecutor
 from pathlib import Path
 from urllib.error import HTTPError
-import threading
-from concurrent.futures import ThreadPoolExecutor as PoolExecutor
-import multiprocessing
 from urllib.request import urlretrieve
-
+import cv2 as cv
 
 def get_image(joined_input):  # line, url, output_folder):
     line, url, output_folder = joined_input.split(' ')
@@ -67,25 +62,22 @@ def download_images(url_list_file, output_folder, max_threads=4):
             cv.namedWindow("Display", cv.WINDOW_GUI_EXPANDED)
             for i, result in executor.map(get_image, url_list):
                 if result is not False:  # If the download was a success
-                    # Imshow the file and decide if it's acceptable for the dataset
-                    print(i, end=' | ')
-                    result = Path(result)
-                    image = cv.imread(str(result))
-                    if image is None:
-                        result.unlink()  # Delete the file
-                        print("Unreadable image ='(")
-                        continue
-                    cv.waitKey(1)  # Get rid of any pending key presses
-                    cv.imshow("Display", image)
-                    if cv.waitKey(0) == 27:  # If esc is pressed
-                        result.unlink()  # Delete the file
-                        print("Delete =(")
-                    else:
-                        print("Keep!")
-                else:
-                    print(i)  # Image failed, so just print out result
-                cv.waitKey(1)
+                    try:
+                        # Imshow the file and decide if it's acceptable for the dataset
+                        print(i, end=' | ')
+                        result = Path(result)
+                        image = cv.imread(str(result))
+                        if image is None:
+                            result.unlink()  # Delete the file
+                            print("Unreadable image ='(")
+                            continue
+                        cv.imshow("Display", image)
+                        cv.waitKey(1)
+                        print("Image is good!")
+                    except:
+                        print("Something went wrong, oh well")
 
 
 if __name__ == '__main__':
-    download_images("screwdriver.txt", "screwdrivers", max_threads=8)
+    download_images("spanner.txt", "spanner", max_threads=4)
+    download_images("screwdriver.txt", "screwdriver", max_threads=4)
