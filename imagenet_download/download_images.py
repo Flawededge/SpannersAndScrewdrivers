@@ -1,11 +1,12 @@
-from concurrent.futures import ThreadPoolExecutor as PoolExecutor
+# from concurrent.futures import ThreadPoolExecutor as PoolExecutor
+from concurrent.futures import ProcessPoolExecutor as PoolExecutor
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import urlretrieve
 import cv2 as cv
 
 
-def get_image(joined_input):  # line, url, output_folder):
+def get_image(joined_input):  # line, url, output_folder
     line, url, output_folder = joined_input.split(' ')
 
     accepted_filenames = ['jpg', 'png', 'gif']
@@ -19,11 +20,8 @@ def get_image(joined_input):  # line, url, output_folder):
     filename = Path(filename[0:-4].replace('.', '') + filename[-4:])
 
     # Check if the file already exists
-    try:
-        if filename.exists():
-            return [f"{line}|Already exists", filename]
-    except Exception as e:
-        return [f"{line}|File error {e}", False]
+    if filename.exists():
+        return [f"{line}|Already exists", filename]
     else:
         try:  # Attempt to download the file
             urlretrieve(url, str(filename))
@@ -36,7 +34,7 @@ def get_image(joined_input):  # line, url, output_folder):
         return [f"{line}|Downloaded!", filename]  # The image has successfully been downloaded
 
 
-def download_images(url_list_file, output_folder, max_threads=4):
+def download_images(url_list_file, output_folder, max_threads=None):
     """ Downloads images from a list of urls in a txt file
 
     :param max_threads: The threads to use for downloads
@@ -63,22 +61,22 @@ def download_images(url_list_file, output_folder, max_threads=4):
             cv.namedWindow("Display", cv.WINDOW_GUI_EXPANDED)
             for i, result in executor.map(get_image, url_list):
                 if result is not False:  # If the download was a success
-                    try:
+                    try:  # Just in case, as some files end up having weird stuff in them
                         # Imshow the file and decide if it's acceptable for the dataset
                         print(i, end=' | ')
                         result = Path(result)
                         image = cv.imread(str(result))
-                        if image is None:
+                        if image is None:  # Image is invalid
                             result.unlink()  # Delete the file
                             print("Unreadable image ='(")
                             continue
-                        cv.imshow("Display", image)
-                        cv.waitKey(1)
+                        cv.imshow("Display", image)  # Show the image cause it looks cool
+                        cv.waitKey(1)  # Let the image show
                         print("Image is good!")
                     except:
                         print("Something went wrong, oh well")
 
 
 if __name__ == '__main__':
-    download_images("spanner.txt", "spanner", max_threads=4)
-    download_images("screwdriver.txt", "screwdriver", max_threads=4)
+    download_images("spanner.txt", "spanner")
+    download_images("screwdriver.txt", "screwdriver")
