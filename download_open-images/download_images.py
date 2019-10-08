@@ -66,7 +66,25 @@ def mapcount(filename):  # Gets number of lines in file
     return lines
 
 
-def download_classes(class_names, mode, occluded=False, truncated=False, groupOf=False, depiction=False, inside=False, max_threads=4):
+def download_classes(class_names, mode, occluded=False, truncated=False, groupOf=False, depiction=False, inside=False, max_threads=None):
+    """ Download the classes given in class_names
+    :param class_names: List of class names from clas-descriptions-boxable.csv
+    :param mode: 0, 1 or 2, relating to train, test or validation set
+    :param occluded: Whether to include occluded images
+    :param truncated: Whether to include truncated
+    :param groupOf: Whether to include groupOf
+    :param depiction: Whether to include depiction
+    :param inside: Whether to include inside
+    :param max_threads: Limits the max threads (must be less than 61)
+    :type class_names: List of strings
+    :type mode: int (0 - 2)
+    :type occluded: bool
+    :type truncated: bool
+    :type groupOf: bool
+    :type depiction: bool
+    :type inside: bool
+    :type max_threads: None or int (less than 61)
+    """
     mode = ["train", "test", "validation"][mode]
     needed_files = ["https://storage.googleapis.com/openimages/2018_04/class-descriptions-boxable.csv",
                     "https://storage.googleapis.com/openimages/2018_04/train/train-annotations-bbox.csv",
