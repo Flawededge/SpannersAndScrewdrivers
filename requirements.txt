@@ -7,6 +7,4 @@ opencv-contrib-python
 tensorflow
 keras
 tqdm
-
-# For download_images.py
-progressbar
+pillow
