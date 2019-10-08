@@ -4,6 +4,7 @@ from urllib.error import HTTPError
 from urllib.request import urlretrieve
 import cv2 as cv
 
+
 def get_image(joined_input):  # line, url, output_folder):
     line, url, output_folder = joined_input.split(' ')
 
