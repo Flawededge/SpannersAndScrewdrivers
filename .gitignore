@@ -10,5 +10,4 @@
 /download_open-images/test-annotations-bbox.csv
 /download_open-images/train-annotations-bbox.csv
 /download_open-images/validation-annotations-bbox.csv
-/Dataset/Wrench/
-/Dataset/Screwdrivers/
+/Dataset/
