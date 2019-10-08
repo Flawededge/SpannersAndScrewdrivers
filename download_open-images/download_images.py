@@ -34,29 +34,30 @@ def download_file(url, sub_folder):
         print(f"Already exists: {str(file)}")
 
 
-def open_images_download(folder, mode, annotations_bbox, occluded, truncated, groupOf, depiction, inside):    # Spread out the variable so it's easier to follow the flow of the function
-    ImageID,Source,LabelName,Confidence,XMin,XMax,YMin,YMax,IsOccluded,IsTruncated,IsGroupOf,IsDepiction,IsInside = annotations_bbox
+def open_images_download(folder, mode, annotations_bbox, occluded, truncated, group_of, depiction, inside):
+    # Spread out the variable so it's easier to follow the flow of the function
+    ImageID,Source,LabelName,Confidence,XMin,XMax,YMin,YMax,IsOccluded,IsTruncated,IsGroupOf,IsDepiction,IsInside \
+        = annotations_bbox
 
     # Check if the image is actually wanted
     if not occluded and IsOccluded:
         return "No download: Occluded"
     if not truncated and IsTruncated:
         return "No download: Truncated"
-    if not groupOf and IsGroupOf:
+    if not group_of and IsGroupOf:
         return "No download: Group of"
     if not depiction and IsDepiction:
         return "No download: Depiction"
     if not inside and IsInside:
         return "No download: Inside"
 
-    command = 'aws s3 --no-sign-request --only-show-errors cp s3://open-images-dataset/'+mode+'/'+ImageID+'.jpg '+ folder+'/'+ImageID+'.jpg'
+    command = 'aws s3 --no-sign-request --only-show-errors cp s3://open-images-dataset/'+mode+'/'+ImageID+'.jpg '\
+              + folder+'/'+ImageID+'.jpg'
     os.system(command)
     return "Downloaded!"
 
-# 's3://open-images-dataset/'+'train'+'/'+'000026e7ee790996'+'.jpg '+ 'train'+'/'+'/m/07j7r'+'/'+'000026e7ee790996'+'.jpg'
-#
 
-def mapcount(filename):  # Gets number of lines in file
+def map_count(filename):  # Gets number of lines in file
     f = open(filename, "r+")
     buf = mmap.mmap(f.fileno(), 0)
     lines = 0
@@ -66,13 +67,14 @@ def mapcount(filename):  # Gets number of lines in file
     return lines
 
 
-def download_classes(class_names, mode, occluded=False, truncated=False, groupOf=False, depiction=False, inside=False, max_threads=None):
+def download_classes(class_names, mode, occluded=False, truncated=False, group_of=False, depiction=False,
+                     inside=False, max_threads=None):
     """ Download the classes given in class_names
     :param class_names: List of class names from clas-descriptions-boxable.csv
     :param mode: 0, 1 or 2, relating to train, test or validation set
     :param occluded: Whether to include occluded images
     :param truncated: Whether to include truncated
-    :param groupOf: Whether to include groupOf
+    :param group_of: Whether to include groupOf
     :param depiction: Whether to include depiction
     :param inside: Whether to include inside
     :param max_threads: Limits the max threads (must be less than 61)
@@ -80,7 +82,7 @@ def download_classes(class_names, mode, occluded=False, truncated=False, groupOf
     :type mode: int (0 - 2)
     :type occluded: bool
     :type truncated: bool
-    :type groupOf: bool
+    :type group_of: bool
     :type depiction: bool
     :type inside: bool
     :type max_threads: None or int (less than 61)
@@ -97,7 +99,7 @@ def download_classes(class_names, mode, occluded=False, truncated=False, groupOf
 
     print("Getting class names")
     image_directory = Path(f"{mode}-annotations-bbox.csv")
-    image_lines = mapcount(str(image_directory))
+    image_lines = map_count(str(image_directory))
 
     descriptions = Path("class-descriptions-boxable.csv")
     with descriptions.open(mode='r') as file:
@@ -120,8 +122,8 @@ def download_classes(class_names, mode, occluded=False, truncated=False, groupOf
             reader = csv.reader(file)
             for i in tqdm(reader, total=image_lines):
                 if i[2] in dict_list:
-                    processing_list.append(executor.submit(open_images_download, f"{str(mode_dir)}/{dict_list[i[2]]}", mode, i, occluded, truncated, groupOf, depiction, inside))
-
+                    processing_list.append(executor.submit(open_images_download, f"{str(mode_dir)}/{dict_list[i[2]]}",
+                                                           mode, i, occluded, truncated, group_of, depiction, inside))
 
         print("Output list:")
         for i in tqdm(processing_list):  # Go through each to check if they worked
@@ -129,4 +131,5 @@ def download_classes(class_names, mode, occluded=False, truncated=False, groupOf
 
 
 if __name__ == '__main__':
-    download_classes(["Screwdriver", "Wrench"], 0, max_threads=6, occluded=True, truncated=True, groupOf=True, depiction=True, inside=True)
+    download_classes(["Screwdriver", "Wrench"], 0, max_threads=6, occluded=True, truncated=True, group_of=True,
+                     depiction=True, inside=True)
