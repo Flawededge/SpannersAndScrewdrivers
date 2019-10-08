@@ -1,3 +1,4 @@
+# Loosely based on https://www.learnopencv.com/fast-image-downloader-for-open-images-v4/
 from urllib.request import urlretrieve
 from pathlib import Path
 import csv
@@ -25,9 +26,11 @@ def progress_bar(count, block_size, total_size, bar_length=30):
 
 
 def download_file(url, sub_folder):
-    file = Path(url.split('/')[-1])
-    if not file.exists():
+    file = Path(url.split('/')[-1])  # get the filename
+    if not file.exists():  # Check if file exists
         print(f"Downloading: {str(file)}")
+
+        # Download it
         urlretrieve(url, filename=f"{sub_folder}{str(file)}", reporthook=progress_bar)
         print()
     else:
@@ -127,7 +130,7 @@ def download_classes(class_names, mode, occluded=False, truncated=False, group_o
 
         print("Output list:")
         for i in tqdm(processing_list):  # Go through each to check if they worked
-            print(f" {i.result()}")
+            pass
 
 
 if __name__ == '__main__':
