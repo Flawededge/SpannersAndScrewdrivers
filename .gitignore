@@ -1,5 +1,5 @@
 /venv/
-/imagenet_download/screwdrivers/
+/imagenet_download/screwdriver/
 /imagenet_download/spanner/
 /Screwdriver/
 /Wrench/
@@ -11,3 +11,4 @@
 /download_open-images/train-annotations-bbox.csv
 /download_open-images/validation-annotations-bbox.csv
 /Dataset/
+
