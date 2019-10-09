@@ -13,7 +13,7 @@ train_data_dir = 'C:\\Users\\Ben\\PycharmProjects\\SpannersAndScrewdrivers\\Data
 validation_data_dir = 'C:\\Users\\Ben\\PycharmProjects\\SpannersAndScrewdrivers\\Dataset\\Validation'
 nb_train_samples = 2000
 nb_validation_samples = 800
-epochs = 50
+epochs = 10
 batch_size = 16
 
 # 3 channel images with given width and height
@@ -37,8 +37,9 @@ model.add(MaxPooling2D(pool_size=(2, 2)))
 
 model.add(Flatten())
 model.add(Dense(64))
+model.add(Dropout(0.5))  # This is apparently the better place for dropout
 model.add(Activation('relu'))
-model.add(Dropout(0.5))
+# model.add(Dropout(0.5))  # This is the original place for dropout
 model.add(Dense(1))
 model.add(Activation('sigmoid'))
 
@@ -73,4 +74,4 @@ model.fit_generator(
     validation_data=validation_generator,
     validation_steps=nb_validation_samples // batch_size)
 
-model.save_weights('fromThatWebThing.h5')
+model.save_weights('attempt2.h5')

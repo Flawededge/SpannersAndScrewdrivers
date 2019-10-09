@@ -156,4 +156,4 @@ plt.legend(loc='upper right')
 plt.title('Training and Validation Loss')
 plt.show()
 
-model.save_weights('testing.h5')
+model.save_weights('attempt1.h5')
